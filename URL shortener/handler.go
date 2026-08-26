@@ -9,7 +9,7 @@ import (
 const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
 
 type ShortenRequest struct {
-	URL string `json"url"`
+	URL string `json:"url"`
 }
 
 func generateID(length int) string {
@@ -22,7 +22,7 @@ func generateID(length int) string {
 	return string(id)
 }
 
-func shortenhandler(w http.ResponseWriter, r *http.Request) {
+func HandleShorten(w http.ResponseWriter, r *http.Request) {
 	id := generateID(8)
 
 	var req ShortenRequest
@@ -30,6 +30,7 @@ func shortenhandler(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
 	}
 
 	url := URL{
@@ -38,14 +39,34 @@ func shortenhandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	urls[id] = url
+	json.NewEncoder(w).Encode(url)
 }
 
-func redirectHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO
+func RedirectHandle(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	
+	originalURL,ok := urls[id]
+
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	originalURL.AccessCount++
+	urls[id] = originalURL
+	http.Redirect(w,r,originalURL.OriginalURL, http.StatusFound)
 }
 
-func statsHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO
+func StatsHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	originalURL,ok := urls[id]
+
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	json.NewEncoder(w).Encode(originalURL)
+	
 }
 
 
