@@ -1,0 +1,195 @@
+openapi: 3.0.3
+info:
+  title: Tasks API
+  description: A simple API for managing tasks.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+
+tags:
+  - name: tasks
+    description: Task management
+
+paths:
+  /tasks:
+    get:
+      tags: [tasks]
+      summary: List all tasks
+      operationId: getTasks
+      responses:
+        "200":
+          description: A list of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+
+    post:
+      tags: [tasks]
+      summary: Create a new task
+      operationId: createTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskPayload"
+      responses:
+        "201":
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+        "400":
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /tasks/{id}:
+    parameters:
+      - $ref: "#/components/parameters/TaskId"
+
+    get:
+      tags: [tasks]
+      summary: Get a task by ID
+      operationId: getTask
+      responses:
+        "200":
+          description: The requested task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      tags: [tasks]
+      summary: Update a task's title
+      operationId: updateTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskPayload"
+      responses:
+        "204":
+          description: Task updated successfully
+        "400":
+          description: Invalid ID or request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      tags: [tasks]
+      summary: Delete a task
+      operationId: deleteTask
+      responses:
+        "204":
+          description: Task deleted successfully
+        "400":
+          description: Invalid ID or deletion failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /tasks/{id}/complete:
+    parameters:
+      - $ref: "#/components/parameters/TaskId"
+
+    patch:
+      tags: [tasks]
+      summary: Mark a task as complete
+      operationId: completeTask
+      responses:
+        "204":
+          description: Task marked as complete
+        "400":
+          description: Invalid ID or completion failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  parameters:
+    TaskId:
+      name: id
+      in: path
+      required: true
+      description: Numeric ID of the task
+      schema:
+        type: integer
+
+  schemas:
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: Buy groceries
+        createdBy:
+          type: string
+          example: alice
+        completed:
+          type: boolean
+          example: false
+      required:
+        - id
+        - title
+        - createdBy
+        - completed
+
+    CreateTaskPayload:
+      type: object
+      properties:
+        title:
+          type: string
+          example: Buy groceries
+        createdBy:
+          type: string
+          example: alice
+      required:
+        - title
+        - createdBy
+
+    UpdateTaskPayload:
+      type: object
+      properties:
+        title:
+          type: string
+          example: Buy groceries and milk
+      required:
+        - title
+
+    ErrorResponse:
+      type: string
+      description: Plain-text error message (from http.Error)
+      example: Invalid ID
