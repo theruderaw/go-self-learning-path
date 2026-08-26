@@ -1,8 +1,10 @@
-Go doesn't have classes. Instead it has structs (data) plus methods (behavior attached to that data) plus interfaces (behavior contracts).
+# 2. Structs, Methods & Interfaces
+
+Go has no classes. Instead there are structs (data), methods (behavior attached to that data), and interfaces (behavior contracts). Together these replace most of what object-oriented languages achieve with classes.
 
 ## Structs
 
-A struct is a named collection of fields.
+A struct is a named collection of fields, used to group related data under one type:
 
 ```go
 type User struct {
@@ -14,20 +16,20 @@ type User struct {
 
 ## Struct initialization
 
-There are everal ways to create one, in increasing order of how idiomatic they are:
+Several forms exist, in increasing order of idiomatic preference:
 
 ```go
 var u User               // zero-valued: ID 0, Name "", Email ""
-u2 := User{1, "Alice", "a@example.com"}          // positional — fragile, avoid
+u2 := User{1, "Alice", "a@example.com"}          // positional — fragile
 u3 := User{ID: 1, Name: "Alice"}                 // named fields — preferred
 u4 := &User{ID: 1, Name: "Alice"}                // pointer to a new struct
 ```
 
-Named-field initialization is strongly preferred because it doesn't break when reordering or adding fields later.
+Named-field initialization is preferred because it does not break when fields are reordered or added later.
 
 ## Nested structs
 
-Structs can contain other structs, allowing real-world hierarchies to be modelled:
+Structs may contain other structs, modeling hierarchical data:
 
 ```go
 type Address struct {
@@ -46,21 +48,21 @@ fmt.Println(u.Address.City)
 
 ## Struct fields
 
-Field access uses dot notation, and works the same on a struct or a pointer to one and Go automatically dereferences:
+Field access uses dot notation, identically whether the value is a struct or a pointer to one — Go dereferences automatically:
 
 ```go
 u := User{Name: "Alice"}
 u.Name = "Bob"
 
 p := &u
-p.Name = "Carol" // no need to write (*p).Name
+p.Name = "Carol" // equivalent to (*p).Name
 ```
 
-Field names starting with a capital letter are exported (visible outside the package); lowercase ones are private to the package. This is Go's entire visibility system, it has no `public`/`private` keywords.
+A field name beginning with a capital letter is exported (visible outside its package); a lowercase name is private to the package. This capitalization rule is Go's entire visibility system — there are no `public`/`private` keywords.
 
 ## Methods
 
-A method is a function with a special "receiver" argument, attaching it to a type:
+A method is a function with an additional "receiver" argument, attaching it to a type:
 
 ```go
 type Rectangle struct {
@@ -77,19 +79,19 @@ rect.Area() // 12
 
 ## Value receivers
 
-`func (r Rectangle) Area()` takes a **copy** of the struct. Changes made inside the method don't affect the original:
+`func (r Rectangle) Area()` operates on a **copy** of the struct. Modifications inside the method do not affect the original:
 
 ```go
 func (r Rectangle) Scale(factor float64) {
-    r.Width *= factor // only modifies the copy — no effect outside
+    r.Width *= factor // modifies only the copy — no external effect
 }
 ```
 
-Value receivers are used when the method only reads data, or the struct is small.
+Value receivers are appropriate when a method only reads data, or the struct is small.
 
 ## Pointer receivers
 
-`func (r *Rectangle) Scale(...)` takes a pointer, so changes persist:
+`func (r *Rectangle) Scale(...)` operates through a pointer, so changes persist:
 
 ```go
 func (r *Rectangle) Scale(factor float64) {
@@ -98,15 +100,15 @@ func (r *Rectangle) Scale(factor float64) {
 }
 
 rect := Rectangle{3, 4}
-rect.Scale(2) // Go auto-takes the address; works even though rect isn't a pointer
+rect.Scale(2) // Go takes the address automatically, even though rect isn't a pointer
 fmt.Println(rect.Width) // 6
 ```
 
-If any method on a type needs a pointer receiver, *all* methods on that type pointer receivers for consistency. Pointer receivers whenever the method mutates state, or the struct is large enough that copying it is wasteful.
+A common convention: if any method on a type requires a pointer receiver, all methods on that type use pointer receivers, for consistency. Pointer receivers are used whenever a method mutates state, or the struct is large enough that copying is wasteful.
 
 ## Interfaces
 
-An interface defines a set of methods a type must have — it's a contract, not a data structure:
+An interface defines a set of methods a type must implement — a contract, not a data structure:
 
 ```go
 type Shape interface {
@@ -114,11 +116,11 @@ type Shape interface {
 }
 ```
 
-Any type with an `Area() float64` method automatically satisfies `Shape` — nothing else is needed.
+Any type with an `Area() float64` method satisfies `Shape` automatically.
 
 ## Implicit interface implementation
 
-This is one of the differences from Java/C#: there's no `implements` keyword. If a type has the right methods, it satisfies the interface.
+Go has no `implements` keyword. If a type has the required methods, it satisfies the interface — nothing further is declared:
 
 ```go
 type Circle struct {
@@ -132,11 +134,11 @@ func (c Circle) Area() float64 {
 var s Shape = Circle{Radius: 2} // Circle satisfies Shape automatically
 ```
 
-This allows declaration of small interfaces near where they're *used*, not where the type is defined This can be used to declare interface that a type from a totally different package (including the standard library) satisfies without either side knowing about the other.
+This allows an interface to be defined near its point of use rather than alongside the implementing type, and permits a type from an entirely unrelated package — including the standard library — to satisfy an interface without either side referencing the other.
 
 ## `any` / empty interface
 
-`any` (an alias for `interface{}`) is satisfied by every type — it's Go's escape hatch for "I don't know the type yet":
+`any` (an alias for `interface{}`) is satisfied by every type — Go's mechanism for "type unknown at this point":
 
 ```go
 func describe(v any) {
@@ -148,27 +150,27 @@ describe("hello")
 describe(User{Name: "Alice"})
 ```
 
-Used sparingly as it throws away type safety, so you usually need a type assertion or type switch to do anything useful with the value afterward.
+Because it discards type safety, a value stored as `any` typically requires a type assertion or type switch before further use.
 
 ## Type assertions
 
-Extracts the concrete type out of an interface value:
+Extracts the concrete type from an interface value:
 
 ```go
 var i any = "hello"
 
-s := i.(string)        // panics if i isn't actually a string
+s := i.(string)        // panics if i is not a string
 s, ok := i.(string)      // safe form — ok is false instead of panicking
 if ok {
     fmt.Println(s)
 }
 ```
 
-The two-value form (`s, ok := ...`) is prepared unless the type is certain and a crash is wanted.
+The two-value form is preferred except when a mismatch should be treated as a fatal error.
 
 ## Type switches
 
-Branch on the concrete type stored inside an interface value:
+Branches on the concrete type stored inside an interface value:
 
 ```go
 func describe(v any) {
@@ -185,11 +187,11 @@ func describe(v any) {
 }
 ```
 
-This is the standard way to handle "one of several possible types" without runtime reflection.
+This is the standard mechanism for handling several possible types without runtime reflection.
 
 ## Struct embedding / composition
 
-Go has no inheritance, but one struct (or interface) can be embedded inside another to get field/method promotion. This is Go's substitute for "is-a" relationships:
+Go has no inheritance, but a struct or interface may be embedded inside another to promote its fields and methods — Go's substitute for "is-a" relationships:
 
 ```go
 type Animal struct {
@@ -210,4 +212,4 @@ d.Describe() // "I am Rex" — promoted from Animal
 d.Name       // "Rex" — also promoted
 ```
 
-This is composition, not inheritance: `Dog` *has* an `Animal`, and its fields/methods are just promoted to the outer struct for convenience. There's no polymorphism through embedding.
+This is composition rather than inheritance: `Dog` contains an `Animal`, and its fields and methods are promoted to the outer struct for convenience. No polymorphism results from embedding — a `Dog` cannot be passed where an `Animal` is expected without an explicit conversion.

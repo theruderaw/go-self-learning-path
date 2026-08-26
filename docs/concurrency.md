@@ -1,27 +1,27 @@
 # 5. Concurrency
 
-Main benefit of Go. For a PWA backend, this is used for things like handling many requests at once, running background jobs, and fanning work out to multiple workers.
+This is the area Go is most known for. In a PWA backend, it governs how many requests are handled at once, how background jobs run, and how work is distributed across workers.
 
 ## Goroutines
 
-A goroutine is a lightweight, Go-managed thread. It is started just by prefixing a function call with `go`:
+A goroutine is a lightweight, Go-managed thread, started by prefixing a function call with `go`:
 
 ```go
 func sayHello() {
     fmt.Println("hello")
 }
 
-go sayHello()          // runs concurrently, doesn't block
+go sayHello()          // runs concurrently, does not block
 go func() {              // anonymous goroutine
     fmt.Println("world")
 }()
 ```
 
-They're cheap  and thousands can be run without issue — but `main()` doesn't wait for goroutines to finish on its own. If `main()` returns, all goroutines are killed mid-flight, so the progrAM NEEDS to wait for them (see `sync.WaitGroup` below).
+Goroutines are cheap enough that thousands can run simultaneously without issue. `main()` does not wait for goroutines to finish on its own — if `main()` returns, all goroutines are terminated mid-execution, which is why a synchronization mechanism such as `sync.WaitGroup` is needed to wait for completion.
 
 ## Channels
 
-A channel is a typed pipe for goroutines to send values to each other safely, without manual locking:
+A channel is a typed pipe used by goroutines to exchange values safely, without manual locking:
 
 ```go
 ch := make(chan int)
@@ -33,27 +33,27 @@ go func() {
 value := <-ch // receive (blocks until something is sent)
 ```
 
-Channels are the concurrency-safe way to move data *between* goroutines, rather than sharing memory and hoping you locked it correctly.
+Channels provide a concurrency-safe way to move data between goroutines, as an alternative to sharing memory directly and relying on manual locking.
 
 ## Buffered / unbuffered channels
 
-An **unbuffered** channel (`make(chan int)`) blocks the sender until a receiver is ready — it's a synchronous handoff. A **buffered** channel (`make(chan int, 3)`) lets you send up to its capacity without blocking:
+An **unbuffered** channel (`make(chan int)`) blocks the sender until a receiver is ready — a synchronous handoff. A **buffered** channel (`make(chan int, 3)`) allows sends up to its capacity without blocking:
 
 ```go
 unbuffered := make(chan int)
 buffered := make(chan int, 3)
 
-buffered <- 1 // doesn't block, buffer has room
+buffered <- 1 // does not block, buffer has room
 buffered <- 2
 buffered <- 3
 // buffered <- 4 would block — buffer is full
 ```
 
-Use unbuffered channels when using a strict handshake; use buffered producer and consumer speed need to be decoupled.
+Unbuffered channels enforce a strict handshake; buffered channels decouple producer and consumer speed to some degree.
 
 ## Channel direction
 
-A channel can restrict its parameter to send-only or receive-only, which the compiler enforces and is useful for documenting intent in function signatures:
+A channel parameter can be restricted to send-only or receive-only, a restriction enforced by the compiler and useful for documenting intent:
 
 ```go
 func send(ch chan<- int, v int) { // send-only
@@ -67,18 +67,18 @@ func receive(ch <-chan int) int { // receive-only
 
 ## Closing channels
 
-`close(ch)` signals "no more values will be sent." Receivers can detect this:
+`close(ch)` signals that no further values will be sent. Receivers can detect this:
 
 ```go
 close(ch)
-v, ok := <-ch // ok is false once the channel is closed and drained
+v, ok := <-ch // ok becomes false once the channel is closed and drained
 ```
 
-Rule: only the **sender** should close a channel, never the receiver, and a channel closed twice panics.
+By convention, only the sender closes a channel; a receiver never does, and a channel is never closed more than once, which would cause a panic.
 
 ## `range` over channels
 
-Reading from a channel in a loop until it's closed:
+Reads from a channel repeatedly until it is closed:
 
 ```go
 ch := make(chan int)
@@ -86,7 +86,7 @@ go func() {
     for i := 0; i < 5; i++ {
         ch <- i
     }
-    close(ch) // must close, or range blocks forever
+    close(ch) // required, or range blocks indefinitely
 }()
 
 for v := range ch {
@@ -96,7 +96,7 @@ for v := range ch {
 
 ## `select`
 
-Waits on multiple channel operations at once, proceeding with whichever is ready first. This is Go's version of a `switch` for channels:
+Waits on multiple channel operations simultaneously, proceeding with whichever becomes ready first — analogous to a `switch` for channels:
 
 ```go
 select {
@@ -107,15 +107,15 @@ case v := <-ch2:
 case <-time.After(2 * time.Second):
     fmt.Println("timed out")
 default:
-    fmt.Println("nothing ready right now") // makes select non-blocking
+    fmt.Println("nothing ready right now") // makes the select non-blocking
 }
 ```
 
-This is how timeouts and cancellations around channels work.
+This mechanism implements timeouts and cancellation around channel-based work.
 
 ## `sync.WaitGroup`
 
-Waits for a group of goroutines to finish and is the standard way to make `main()` (or any function) wait:
+Waits for a group of goroutines to complete — the standard way to make `main()` or any function block until concurrent work is finished:
 
 ```go
 var wg sync.WaitGroup
@@ -125,17 +125,17 @@ for i := 0; i < 3; i++ {
     go func(n int) {
         defer wg.Done()
         fmt.Println("worker", n)
-    }(i) // pass i explicitly to avoid the classic loop-variable bug
+    }(i) // i is passed explicitly to avoid the classic loop-variable bug
 }
 
-wg.Wait() // blocks until all 3 call Done()
+wg.Wait() // blocks until all three goroutines call Done()
 ```
 
-`Add(1)` before starting each goroutine, `Done()` (usually deferred) inside it, `Wait()` to block until the count reaches zero.
+`Add(1)` is called before starting each goroutine, `Done()` (usually deferred) is called inside it, and `Wait()` blocks until the internal counter reaches zero.
 
 ## `sync.Mutex`
 
-Protects shared state from concurrent access when you genuinely need to share memory rather than pass it over a channel:
+Protects shared state from concurrent access, for situations where memory is genuinely shared rather than passed over a channel:
 
 ```go
 type Counter struct {
@@ -150,11 +150,11 @@ func (c *Counter) Increment() {
 }
 ```
 
-Without the lock, two goroutines incrementing `count` at the same time can lose updates — that's a race condition (next section).
+Without the lock, two goroutines incrementing `count` simultaneously can lose updates — a race condition, covered next.
 
 ## Race conditions
 
-A race condition happens when two goroutines access the same memory concurrently, and at least one is writing, without synchronization. The result is undefined, sometimes it works, sometimes data gets silently corrupted.
+A race condition occurs when two goroutines access the same memory concurrently and at least one is writing, without synchronization. The outcome is undefined: sometimes correct, sometimes silently corrupted.
 
 ```go
 counter := 0
@@ -163,18 +163,18 @@ for i := 0; i < 1000; i++ {
     wg.Add(1)
     go func() {
         defer wg.Done()
-        counter++ // NOT safe — read-modify-write isn't atomic
+        counter++ // not safe — read-modify-write is not atomic
     }()
 }
 wg.Wait()
-fmt.Println(counter) // often NOT 1000
+fmt.Println(counter) // often not 1000
 ```
 
-It is fixed with a mutex, a channel, or `sync/atomic` for simple counters. Go ships a built-in tool to catch these via race detector in the Testing section.
+The fix is a mutex, a channel, or `sync/atomic` for simple counters. Go includes a built-in detector for this class of bug, described in the Testing section.
 
 ## Basic concurrency patterns
 
-**Worker pool** — a fixed number of goroutines pulling work off a shared channel:
+**Worker pool** — a fixed number of goroutines pulling work from a shared channel:
 
 ```go
 func worker(id int, jobs <-chan int, results chan<- int) {
@@ -196,4 +196,4 @@ for j := 1; j <= 5; j++ {
 close(jobs)
 ```
 
-**Fan-out/fan-in** — multiple goroutines processing in parallel, results collected on one channel. **Pipeline** — chaining stages together, each stage's output channel feeding the next stage's input. These are just combinations of the primitives above — once you're comfortable with goroutines, channels, `select`, and `WaitGroup`, these patterns fall out naturally.
+**Fan-out/fan-in** distributes work across multiple goroutines and collects results on a single channel. **Pipeline** chains stages together, with each stage's output channel feeding the next stage's input. Both patterns are combinations of the primitives above — goroutines, channels, `select`, and `WaitGroup`.

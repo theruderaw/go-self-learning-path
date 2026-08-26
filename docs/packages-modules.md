@@ -1,10 +1,10 @@
-# 3. Packages and Modules
+# 3. Packages & Modules
 
-This section is about how Go code is organized into files, folders, and dependency-managed projects.
+This section covers how Go code is organized into files, directories, and dependency-managed projects.
 
 ## Packages
 
-Every Go file belongs to a package, declared at the top of the file. All files in the same directory must belong to the same package:
+Every Go file belongs to a package, declared at the top of the file. All files within one directory must share the same package:
 
 ```go
 package main   // executable entry point
@@ -12,11 +12,11 @@ package main   // executable entry point
 package user   // a library package, e.g. in a folder named "user"
 ```
 
-`package main` is special: it must contain a `func main()`, and it's what makes a program produce an executable rather than a library.
+`package main` is special: it must contain a `func main()`, and produces an executable rather than a library.
 
 ## Imports
 
-Bring in code from other packages:
+Code from other packages is brought in with `import`:
 
 ```go
 import "fmt"
@@ -28,15 +28,15 @@ import (
 )
 ```
 
-Only imported packages actually used are allowed and an unused import is a compile error, not just a warning. This keeps dependency lists honest.
+An imported package that is not used anywhere in the file is a compile error, not merely a warning — this keeps dependency lists accurate.
 
 ## Exported / unexported identifiers
 
-There's no `public`/`private` keyword. Capitalization is the visibility rule:
+There is no `public`/`private` keyword; capitalization determines visibility:
 
 ```go
 func PublicFunc() {}    // exported — visible outside the package
-func privateFunc() {}   // unexported — only visible within the package
+func privateFunc() {}   // unexported — visible only within the package
 
 type User struct {
     Name string // exported field
@@ -44,11 +44,11 @@ type User struct {
 }
 ```
 
-This applies to functions, types, struct fields, constants, and variables alike.
+The rule applies uniformly to functions, types, struct fields, constants, and variables.
 
 ## Package aliases
 
-When two imports would collide, or a package name is inconvenient, it is aliased:
+When two imports collide, or a package name is inconvenient, an alias is assigned:
 
 ```go
 import (
@@ -58,19 +58,19 @@ import (
 
 import (
     "fmt"
-    myfmt "myapp/fmt" // avoid clashing with the standard fmt
+    myfmt "myapp/fmt" // avoids clashing with the standard fmt package
 )
 ```
 
 ## `go.mod`
 
-The file that declares your project as a Go module — its name, its Go version, and its dependencies. Created with:
+Declares a project as a Go module: its name, Go version, and dependencies. Created with:
 
 ```bash
 go mod init github.com/yourname/yourapp
 ```
 
-Resulting `go.mod` looks roughly like:
+The resulting file resembles:
 
 ```
 module github.com/yourname/yourapp
@@ -82,17 +82,17 @@ require (
 )
 ```
 
-The module path (`github.com/yourname/yourapp`) is also the import prefix other code (or your own internal packages) will use to reference this project.
+The module path also serves as the import prefix used to reference the project's own internal packages.
 
 ## Dependencies
 
-Go dependencies are just other modules, referenced by their source repository path and a version:
+Go dependencies are simply other modules, referenced by source-repository path and version:
 
 ```go
 import "github.com/lib/pq"
 ```
 
-You don't need a central package registry like npm — Go fetches directly from source control (GitHub, GitLab, etc.) based on the import path.
+No central package registry is required — dependencies are fetched directly from source control (GitHub, GitLab, etc.) based on the import path.
 
 ## `go get`
 
@@ -106,14 +106,14 @@ go get -u ./...                      # update all dependencies
 
 ## `go mod tidy`
 
-Cleans up `go.mod`/`go.sum` so they exactly match what your code actually imports — adds anything missing, removes anything unused:
+Reconciles `go.mod`/`go.sum` with what the code actually imports — adding anything missing and removing anything unused:
 
 ```bash
 go mod tidy
 ```
 
-Run after adding/removing imports by hand, or after pulling changes from remote. 
+This is run after imports are added or removed by hand, or after pulling changes made by others.
 
 ## `go.sum`
 
-A checksum file that locks the exact content-hash of every dependency (and its dependencies), so builds are reproducible and dependencies can't be silently swapped for something malicious. It isn’t edited by hand as`go get`/`go mod tidy` maintain it for automatically. Both `go.mod` and `go.sum` should always be committed to version control.
+A checksum file locking the exact content hash of every dependency and its own dependencies, ensuring reproducible builds and preventing a dependency from being silently substituted. It is maintained automatically by `go get`/`go mod tidy` and is not edited by hand. Both `go.mod` and `go.sum` are committed to version control.
