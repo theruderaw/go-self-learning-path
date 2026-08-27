@@ -1,10 +1,10 @@
 # 7. JSON & Data
 
-Nearly every request and response in a PWA backend passes through JSON. This section is about converting between Go structs and JSON reliably.
+Nearly every request and response in a PWA backend passes through JSON. This section covers converting between Go structs and JSON.
 
 ## `encoding/json`
 
-The standard library package for all JSON work — no third-party library needed for typical use:
+The standard library package handling JSON encoding and decoding — no third-party library is required for typical use:
 
 ```go
 import "encoding/json"
@@ -12,23 +12,23 @@ import "encoding/json"
 
 ## Struct tags
 
-Tags after a field tell `encoding/json` how to map that field to a JSON key:
+A tag following a field tells `encoding/json` how to map that field to a JSON key:
 
 ```go
 type User struct {
     ID        int       `json:"id"`
     Name      string    `json:"name"`
-    Email     string    `json:"email,omitempty"`   // omit if empty
-    Password  string    `json:"-"`                  // never include in JSON
+    Email     string    `json:"email,omitempty"`   // omitted when empty
+    Password  string    `json:"-"`                  // never included in JSON
     CreatedAt time.Time `json:"created_at"`
 }
 ```
 
-Without a tag, the field is exported under its exact Go name (`Name`, not `name`) — which is why you almost always want explicit tags for a clean API. `omitempty` drops the field entirely from the output when it's the zero value. `-` excludes it unconditionally (useful for things like password hashes).
+Without a tag, a field is exported under its exact Go name (`Name`, not `name`), which is why explicit tags are used for a clean external API. `omitempty` drops a field entirely from the output when it holds the zero value. `-` excludes a field unconditionally — useful for values such as password hashes.
 
 ## Marshal
 
-Converting a Go value **into** JSON:
+Converts a Go value **into** JSON:
 
 ```go
 u := User{ID: 1, Name: "Alice", Email: "a@example.com"}
@@ -39,7 +39,7 @@ data, err := json.Marshal(u)
 pretty, err := json.MarshalIndent(u, "", "  ") // indented for readability
 ```
 
-In an HTTP handler, skip the intermediate `[]byte` and encode straight to the response:
+In an HTTP handler, the intermediate `[]byte` is usually skipped, encoding directly to the response:
 
 ```go
 json.NewEncoder(w).Encode(u)
@@ -47,13 +47,13 @@ json.NewEncoder(w).Encode(u)
 
 ## Unmarshal
 
-Converting JSON **into** a Go value, the field must be exported (capitalized) or `encoding/json` can't set it:
+Converts JSON **into** a Go value — the target fields must be exported (capitalized) or `encoding/json` cannot set them:
 
 ```go
 data := []byte(`{"id":1,"name":"Alice"}`)
 
 var u User
-err := json.Unmarshal(data, &u) // note the &, Unmarshal needs a pointer
+err := json.Unmarshal(data, &u) // note the &; Unmarshal requires a pointer
 ```
 
 From an HTTP request body, a decoder is used instead of reading the whole body first:
@@ -68,7 +68,7 @@ if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 
 ## JSON request/response handling
 
-A full handler pattern to be reused constantly:
+A recurring handler pattern:
 
 ```go
 type CreateUserRequest struct {
@@ -98,11 +98,11 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-Use separate `Request` and `Response` structs rather than reusing database model directly — it keeps public API shape decoupled from your internal data model, so one can be changed without breaking the other.
+Separate `Request` and `Response` structs are used rather than reusing the database model directly, keeping the public API shape decoupled from the internal data model — one can change without breaking the other.
 
 ## Validation
 
-Go doesn't have built-in struct validation and ir is written explicitly (or a library like `go-playground/validator` once app grows). For most PWA backends, explicit manual validation is fine and easier to reason about:
+Go has no built-in struct validation; it is written explicitly, or handled with a library such as `go-playground/validator` as an application grows. Manual validation is generally sufficient for most PWA backends:
 
 ```go
 func (r CreateUserRequest) Validate() error {
@@ -126,3 +126,5 @@ func createUser(w http.ResponseWriter, r *http.Request) {
     // ... proceed ...
 }
 ```
+
+If `go-playground/validator` is adopted later, the same idea applies through struct tags (`validate:"required,email"`) rather than hand-written checks.
