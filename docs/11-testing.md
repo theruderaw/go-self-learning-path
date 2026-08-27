@@ -1,23 +1,23 @@
 # 11. Testing
 
-Testing is a first-class citizen in Go — no third-party framework needed to get real value, though a few small libraries (like `testify`) are common for nicer assertions.
+Testing is a first-class part of the Go toolchain, requiring no third-party framework to be useful, though small libraries such as `testify` are common for more expressive assertions.
 
 ## `testing`
 
-The standard library package all Go tests are built on:
+The standard library package underlying all Go tests:
 
 ```go
 import "testing"
 ```
 
-Test files end in `_test.go` and live alongside the code they test, in the same package:
+Test files end in `_test.go` and reside alongside the code they test, in the same package:
 
 ```
 user.go
 user_test.go
 ```
 
-A test function must start with `Test`, take `*testing.T`, and have no return value:
+A test function must begin with `Test`, take `*testing.T`, and return nothing:
 
 ```go
 func TestAdd(t *testing.T) {
@@ -28,11 +28,11 @@ func TestAdd(t *testing.T) {
 }
 ```
 
-`t.Errorf` marks the test failed but keeps running; `t.Fatalf` marks it failed and stops immediately (use this when continuing would just cause confusing follow-on failures, e.g. a nil pointer from a failed setup step).
+`t.Errorf` marks a failure but allows the test to continue; `t.Fatalf` marks a failure and stops immediately, used when continuing would only produce confusing follow-on failures — for instance, a nil pointer resulting from a failed setup step.
 
 ## Unit tests
 
-A unit test checks one function or method in isolation:
+A unit test verifies one function or method in isolation:
 
 ```go
 func Add(a, b int) int {
@@ -50,7 +50,7 @@ func TestAdd(t *testing.T) {
 
 ## Table-driven tests
 
-The idiomatic Go pattern for testing many input/output pairs without repeating the same test body — a slice of cases, looped over:
+The idiomatic pattern for testing many input/output pairs without repeating the test body — a slice of cases is defined and looped over:
 
 ```go
 func TestAdd(t *testing.T) {
@@ -76,11 +76,11 @@ func TestAdd(t *testing.T) {
 }
 ```
 
-This is by far the most common shape of a Go test — expect to write this pattern constantly.
+This is the most common shape a Go test takes.
 
 ## Subtests
 
-`t.Run(name, func(t *testing.T) {...})` creates a named subtest — each shows up individually in test output, can be run selectively with `-run`, and failing subtests don't stop sibling subtests from executing:
+`t.Run(name, func(t *testing.T) {...})` creates a named subtest — each appears individually in test output, can be selected specifically with `-run`, and a failing subtest does not stop sibling subtests from running:
 
 ```bash
 go test -run TestAdd/negative_numbers ./...
@@ -88,7 +88,7 @@ go test -run TestAdd/negative_numbers ./...
 
 ## Test helpers
 
-A function that sets up common state for tests. Mark it with `t.Helper()` so failure line numbers point to the *caller* of the helper, not the helper itself:
+A function that sets up shared state for tests. Marking it with `t.Helper()` causes failure line numbers to point to the caller of the helper rather than the helper itself:
 
 ```go
 func newTestUser(t *testing.T, name string) *User {
@@ -108,7 +108,7 @@ func TestSomething(t *testing.T) {
 
 ## HTTP handler tests
 
-Test handlers directly by calling them with a fake request/response, no real server or network needed:
+Handlers are tested directly by invoking them with a fake request/response, without a real server or network:
 
 ```go
 func TestHelloHandler(t *testing.T) {
@@ -131,7 +131,7 @@ func TestHelloHandler(t *testing.T) {
 
 ## `httptest`
 
-The package behind the example above — provides `httptest.NewRequest` (build a fake request without a real socket), `httptest.NewRecorder` (capture a handler's response), and `httptest.NewServer` (spin up a real local server for integration-style tests, e.g. when testing an HTTP client):
+The package behind the preceding example — provides `httptest.NewRequest` (builds a fake request without a real socket), `httptest.NewRecorder` (captures a handler's response), and `httptest.NewServer` (starts a real local server for integration-style tests, such as testing an HTTP client):
 
 ```go
 server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -144,22 +144,22 @@ resp, _ := http.Get(server.URL)
 
 ## `go test`
 
-Runs your tests:
+Runs the test suite:
 
 ```bash
 go test ./...              # all packages, recursively
-go test ./internal/user     # just one package
-go test -v ./...            # verbose — show each test name and result
+go test ./internal/user     # a single package
+go test -v ./...            # verbose — shows each test name and result
 go test -run TestAdd ./...  # only tests matching this name/pattern
-go test -cover ./...         # show coverage percentage
+go test -cover ./...         # shows coverage percentage
 ```
 
 ## Race detector
 
-Catches data races (concurrent unsynchronized access) at runtime — critical to run regularly on any code using goroutines:
+Detects data races (concurrent unsynchronized access) at runtime — important to run regularly on any code using goroutines:
 
 ```bash
 go test -race ./...
 ```
 
-It's slower than a normal test run (extra instrumentation), so many teams run it in CI but not on every local save — but it should absolutely be part of your CI pipeline for any concurrent code.
+It runs slower than a normal test pass due to added instrumentation, so it is often run in CI rather than on every local save, but it is typically part of the CI pipeline for any concurrent code.

@@ -1,10 +1,10 @@
-# 6. HTTP/Web 
+# 6. HTTP / Web
 
-This is crucial for a PWA backend. Go's standard library is complete to build a real production API without any framework.
+This is where the preceding fundamentals converge into a working backend. Go's standard library is unusually complete here — a production API can be built without any external framework.
 
 ## `net/http`
 
-The standard library package for both HTTP servers and clients. For a lot of backends, this is all needed, no Express/Flask equivalent required.
+The standard library package covering both HTTP servers and clients. For many backends, this package alone is sufficient — no Express/Flask equivalent is required.
 
 ```go
 import "net/http"
@@ -23,7 +23,7 @@ func main() {
 }
 ```
 
-For anything beyond a toy, a new `*http.Server` can be used so timeouts can be set:
+Beyond a toy example, an explicit `*http.Server` is generally constructed so that timeouts can be configured:
 
 ```go
 srv := &http.Server{
@@ -37,25 +37,25 @@ log.Fatal(srv.ListenAndServe())
 
 ## Handlers
 
-A handler is anything satisfying the `http.Handler` interface (one method: `ServeHTTP`). `http.HandlerFunc` is an adapter that lets a plain function act as a handler:
+A handler is anything satisfying the `http.Handler` interface (one method: `ServeHTTP`). `http.HandlerFunc` adapts a plain function so it can act as a handler:
 
 ```go
 func hello(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintln(w, "hi")
 }
 
-http.HandleFunc("/hello", hello) // wraps hello as an http.HandlerFunc automatically
+http.HandleFunc("/hello", hello) // wrapped as an http.HandlerFunc automatically
 ```
 
 ## `http.Request`
 
-Everything about the incoming request lives here:
+Carries all information about the incoming request:
 
 ```go
 func handler(w http.ResponseWriter, r *http.Request) {
     r.Method          // "GET", "POST", etc.
     r.URL.Path         // "/users/42"
-    r.URL.Query()       // query string params
+    r.URL.Query()       // query string parameters
     r.Header.Get("Authorization")
     body, _ := io.ReadAll(r.Body)
     defer r.Body.Close()
@@ -64,7 +64,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 ## `http.ResponseWriter`
 
-How you write the response with headers first, then status code, then body, in that order (you can't change headers after writing the body):
+Used to construct the response — headers first, then the status code, then the body, in that order, since headers cannot be modified after the body is written:
 
 ```go
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -76,7 +76,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 ## Routing
 
-Go 1.22+'s built-in `http.ServeMux` supports method matching and path parameters natively, so an external router is needed for maximum cases:
+Go 1.22+'s built-in `http.ServeMux` supports method matching and path parameters natively, covering many routing needs without an external router:
 
 ```go
 mux := http.NewServeMux()
@@ -86,7 +86,7 @@ mux.HandleFunc("POST /users", createUser)
 http.ListenAndServe(":8080", mux)
 ```
 
-For more complex routing needs, popular third-party routers (`chi`, `gorilla/mux`) are still common, but the standard library now covers most PWA-backend use cases on its own.
+For more elaborate routing requirements, third-party routers (`chi`, `gorilla/mux`) remain common, though the standard library now covers most PWA-backend use cases independently.
 
 ## HTTP methods
 
@@ -97,37 +97,19 @@ mux.HandleFunc("PUT /items/{id}", updateItem)
 mux.HandleFunc("DELETE /items/{id}", deleteItem)
 ```
 
-Handlers matched to REST conventions: GET reads, POST creates, PUT/PATCH updates, DELETE removes.
+Handlers are matched to REST conventions: GET reads, POST creates, PUT/PATCH updates, DELETE removes.
 
 ## Status codes
 
 ```go
-// 2xx Success
-http.StatusOK                              // 200
-http.StatusCreated                         // 201
-http.StatusAccepted                        // 202
-http.StatusNoContent                       // 204
-
-// 3xx Redirection
-http.StatusMovedPermanently                // 301
-http.StatusFound                           // 302
-http.StatusNotModified                     // 304
-
-// 4xx Client Errors
-http.StatusBadRequest                      // 400
-http.StatusUnauthorized                    // 401
-http.StatusForbidden                       // 403
-http.StatusNotFound                        // 404
-http.StatusMethodNotAllowed                // 405
-http.StatusConflict                        // 409
-http.StatusUnprocessableEntity             // 422
-http.StatusTooManyRequests                 // 429
-
-// 5xx Server Errors
-http.StatusInternalServerError             // 500
-http.StatusBadGateway                      // 502
-http.StatusServiceUnavailable              // 503
-http.StatusGatewayTimeout                  // 504
+http.StatusOK                  // 200
+http.StatusCreated              // 201
+http.StatusNoContent            // 204
+http.StatusBadRequest           // 400
+http.StatusUnauthorized         // 401
+http.StatusForbidden            // 403
+http.StatusNotFound             // 404
+http.StatusInternalServerError  // 500
 ```
 
 ```go
@@ -152,7 +134,7 @@ w.Header().Set("Cache-Control", "no-store")
 // GET /search?q=go&limit=10
 func handler(w http.ResponseWriter, r *http.Request) {
     q := r.URL.Query().Get("q")           // "go"
-    limit := r.URL.Query().Get("limit")    // "10" (as a string — parsing needed)
+    limit := r.URL.Query().Get("limit")    // "10" (a string, parsed separately)
 }
 ```
 
@@ -169,7 +151,7 @@ mux.HandleFunc("GET /users/{id}", func(w http.ResponseWriter, r *http.Request) {
 
 ## Middleware
 
-A middleware wraps a handler to add cross-cutting behavior (logging, auth, recovery) without touching the handler itself. The pattern: a function that takes a handler and returns a new handler.
+Middleware wraps a handler to add cross-cutting behavior — logging, authentication, panic recovery — without modifying the handler itself. The pattern is a function taking a handler and returning a new one.
 
 ```go
 func loggingMiddleware(next http.Handler) http.Handler {
@@ -184,11 +166,11 @@ handler := loggingMiddleware(mux)
 http.ListenAndServe(":8080", handler)
 ```
 
-Chain multiple by wrapping repeatedly: `logging(auth(recover(mux)))`.
+Multiple middlewares are chained by nested wrapping: `logging(auth(recover(mux)))`.
 
 ## JSON APIs
 
-Most PWA backends are JSON in, JSON out — covered fully in the next section, but here's the shape in a handler:
+Most PWA backends exchange JSON in both directions — covered fully in the next section, but the shape within a handler is:
 
 ```go
 func createUser(w http.ResponseWriter, r *http.Request) {
@@ -206,7 +188,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 
 ## HTTP clients
 
-For calling other APIs from backend:
+For calling other APIs from the backend:
 
 ```go
 resp, err := http.Get("https://api.example.com/data")
@@ -229,7 +211,7 @@ resp, err = client.Do(req)
 
 ## Timeouts
 
-Never use the zero-value `http.Client` in production as it has no timeout and will hang forever on a stuck connection:
+The zero-value `http.Client` has no timeout and can hang indefinitely on a stuck connection, so an explicit timeout is set:
 
 ```go
 client := &http.Client{
@@ -237,4 +219,4 @@ client := &http.Client{
 }
 ```
 
-For per-request cancellation (more flexible than a blanket client timeout), pair a request with a `context.Context` — covered in the Context section.
+For per-request cancellation, a `context.Context` is paired with the request instead of relying on a blanket client timeout — covered in the Context section.

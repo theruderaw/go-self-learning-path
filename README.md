@@ -1,17 +1,24 @@
 # Go Self-Learning Documentation
 
-The goal of this learning document is to give developers a practical foundation in Go. Each stage introduces concepts that are immediately reinforced through a project.
+The goal of this learning document is to give developers a practical foundation in Go for building a real PWA backend. Each stage introduces concepts that are immediately reinforced through a project.
 
 ## Learning Path
 
-1. [Go Basics](docs/go-basics.md)
-2. [Structs, Methods & Interfaces](docs/structs-methods-interfaces.md)
-3. [Packages & Modules](docs/packages-modules.md)
-4. [Defer & Panic](docs/defer-panic.md)
-5. [Concurrency](docs/concurrency.md)
-6. [HTTP / Web](docs/http-web.md)
-7. [JSON & Data](docs/json-data.md)
-8. [Context](docs/context.md)
+1. [Go Basics](docs/01-fundamentals.md)
+2. [Structs, Methods & Interfaces](docs/02-structs-methods-interfaces.md)
+3. [Packages & Modules](docs/03-packages-modules.md)
+4. [Defer & Panic](docs/04-defer-panic.md)
+5. [Concurrency](docs/05-concurrency.md)
+6. [HTTP / Web](docs/06-http-web.md)
+7. [JSON & Data](docs/07-json-data.md)
+8. [Context](docs/08-context.md)
+9. [File I/O](docs/09-file-io.md)
+10. [Database (`database/sql`)](docs/10-database.md)
+11. [Testing](docs/11-testing.md)
+12. [Project Structure & Tooling](docs/12-project-structure-tooling.md)
+13. [pgx (PostgreSQL Driver, In Depth)](docs/13-pgx.md)
+14. [GORM](docs/14-gorm.md)
+15. [Authentication & Authorization (OAuth2)](docs/15-oauth2.md)
 
 ## Learning Projects
 
@@ -164,14 +171,16 @@ Build a service that persists users/OAuth2 information in PostgreSQL.
 **Concepts**
 
 - `database/sql`
+- pgx (native API)
+- GORM
 - PostgreSQL
 - Connection pools
 - SQL queries
 - Transactions
 - Migrations
 - Repository pattern
-- OAuth2
-- Sessions/tokens
+- OAuth2 / authentication & authorization
+- JWTs, sessions, refresh tokens
 - Configuration
 - Environment variables
 - Integration testing
